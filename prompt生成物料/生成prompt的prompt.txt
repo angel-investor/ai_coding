@@ -1,0 +1,57 @@
+我现在准备借助cursor或claude code来自动生成代码 我需要进行以下实战场景：
+①项目代码结构
+②数据分析（生成html含有分析图页面，可交互）
+③分类预测flask与xgboost（包含前端）
+④基于qwen语音合成 语音合成CosyVoice构建一个问答（前端）=》将大模型回答转成语音在前端
+⑤代码自动提交
+
+
+
+上面三个模块（②③④）你给出每个 实战名称（都是基于心血管疾病数据集 ）
+同时给出上述（①②③④⑤）对应的提示词 我希望cursor分别基于上述五份不同的提示词 先进行项目结构初始化，再进行分析 再进行xgboost分类 再基于deepseek来实现问答 最后进行一个版本公式与代码提交，需要五份让cursor来进行代码生成prompt。以下是其他相关信息供参考：
+
+目前在天池大赛上找了这一份数据 https://tianchi.aliyun.com/dataset/212054，即
+心血管疾病预测数据集
+	数据集概述 该数据集包含70,000条患者医疗记录，专门用于心血管疾病的风险预测研究。数据集来源于真实的医疗检查数据，涵盖了与心血管健康密切相关的临床指标和生活方式因素。 关键特征变量 数据集包含以下12个关键特征： 人口统计学特征： age - 患者年龄（岁） gender - 性别（1: 女性, 2: 男性） height - 身高（cm） weight - 体重（kg） 临床测量指标： ap_hi - 收缩压（mmHg） ap_lo - 舒张压（mmHg） cholesterol - 胆固醇水平（1: 正常, 2: 偏高, 3: 很高） gluc - 血糖水平（1: 正常, 2: 偏高, 3: 很高） 生活方式因素： smoke - 吸烟习惯（0: 不吸烟, 1: 吸烟） alco - 饮酒习惯（0: 不饮酒, 1: 饮酒） active - 身体活动水平（0: 不活跃, 1: 活跃） 目标变量 cardio - 心血管疾病诊断（0: 无疾病, 1: 有疾病） 数据集特点 数据规模：约70,000条记录，适合机器学习建模 类别平衡：正负样本比例接近1:1，避免了类别不平衡问题 特征多样性：包含数值型、类别型和二元特征 现实意义：所有特征都具有明确的临床意义和医学解释性 数据质量 存在少量缺失值（<2%）
+
+我的开发目录：
+D:\project\workspace\ai_coding\aicodes
+我的数据集目录：
+D:\project\workspace\ai_coding\data\心血管疾病.xlsx
+我的配置文件：
+D:\project\workspace\ai_coding\aicodes\.env
+
+补充信息：
+1、语音合成CosyVoice的Python SDK网址为：https://help.aliyun.com/zh/model-studio/cosyvoice-python-sdk?spm=a2c4g.11186623.0.i5
+2、python调用deepseek api接口示例脚本如下：
+from langchain_openai import ChatOpenAI
+# DeepSeek API 配置
+API_KEY = "sk-52e226ac3cac46838cb282b45b1a648e"  # 替换为你的 DeepSeek API 密钥
+API_URL = "https://api.deepseek.com/v1"
+MODEL = "deepseek-chat"
+
+# 初始化 ChatOpenAI，配置 DeepSeek API
+from langchain_openai import ChatOpenAI
+llm = ChatOpenAI(
+    model=MODEL,
+    api_key=API_KEY,
+    base_url=API_URL,
+    temperature=0.7,
+    max_tokens=150
+)
+
+prompt = """
+你是传智教育的客服助手。课程套餐包括：
+- AI 大模型开发工程师（1000 贝，12 周，程序员）
+- AI 大模型数据分析工程师（500 贝，10 周，数据分析师）
+- AI 大模型运维工程师（500 贝，8 周，运维工程师）
+- AI 大模型 Java 开发工程师（600 贝，15 周，Java 程序员）
+根据用户输入，推荐合适的套餐，输出 JSON：{"推荐套餐": "名称", "理由": "说明"}。
+
+用户输入：预算 2000 贝以内。
+"""
+# 调用 DeepSeek API
+response = llm.invoke(prompt)
+print(response.content)
+
+中文回复 中文日志

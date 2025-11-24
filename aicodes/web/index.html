@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心血管疾病预测系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🫀 心血管疾病预测系统</h1>
+            <p class="subtitle">基于 XGBoost 机器学习模型的智能健康评估</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="predict">疾病预测</button>
+            <button class="tab-btn" data-tab="chat">健康咨询</button>
+            <button class="tab-btn" data-tab="voice">语音问答</button>
+        </nav>
+
+        <!-- 预测页面 -->
+        <div id="predict-tab" class="tab-content active">
+            <div class="card">
+                <h2>输入健康数据</h2>
+                <form id="predict-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="age">年龄 (岁)</label>
+                            <input type="number" id="age" name="age" required min="1" max="120">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="gender">性别</label>
+                            <select id="gender" name="gender" required>
+                                <option value="">请选择</option>
+                                <option value="1">女</option>
+                                <option value="2">男</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="height">身高 (cm)</label>
+                            <input type="number" id="height" name="height" required min="50" max="250">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="weight">体重 (kg)</label>
+                            <input type="number" id="weight" name="weight" required min="20" max="300">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="ap_hi">收缩压 (mmHg)</label>
+                            <input type="number" id="ap_hi" name="ap_hi" required min="50" max="250">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="ap_lo">舒张压 (mmHg)</label>
+                            <input type="number" id="ap_lo" name="ap_lo" required min="30" max="200">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cholesterol">胆固醇</label>
+                            <select id="cholesterol" name="cholesterol" required>
+                                <option value="">请选择</option>
+                                <option value="1">正常</option>
+                                <option value="2">高于正常</option>
+                                <option value="3">远高于正常</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="gluc">血糖</label>
+                            <select id="gluc" name="gluc" required>
+                                <option value="">请选择</option>
+                                <option value="1">正常</option>
+                                <option value="2">高于正常</option>
+                                <option value="3">远高于正常</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="smoke">吸烟</label>
+                            <select id="smoke" name="smoke" required>
+                                <option value="">请选择</option>
+                                <option value="0">否</option>
+                                <option value="1">是</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="alco">饮酒</label>
+                            <select id="alco" name="alco" required>
+                                <option value="">请选择</option>
+                                <option value="0">否</option>
+                                <option value="1">是</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="active">运动</label>
+                            <select id="active" name="active" required>
+                                <option value="">请选择</option>
+                                <option value="0">不运动</option>
+                                <option value="1">经常运动</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">开始预测</button>
+                </form>
+            </div>
+
+            <div id="predict-result" class="card result-card" style="display: none;">
+                <h2>预测结果</h2>
+                <div id="result-content"></div>
+                <button class="btn btn-secondary" onclick="getHealthAdvice()">获取健康建议</button>
+            </div>
+
+            <div id="health-advice" class="card" style="display: none;">
+                <h2>健康建议</h2>
+                <div id="advice-content" class="advice-text"></div>
+            </div>
+        </div>
+
+        <!-- 健康咨询页面 -->
+        <div id="chat-tab" class="tab-content">
+            <div class="card">
+                <h2>健康咨询</h2>
+                <div id="chat-messages" class="chat-messages"></div>
+                <form id="chat-form">
+                    <div class="chat-input-group">
+                        <input type="text" id="chat-input" placeholder="请输入您的问题..." required>
+                        <button type="submit" class="btn btn-primary">发送</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 语音问答页面 -->
+        <div id="voice-tab" class="tab-content">
+            <div class="card">
+                <h2>语音问答</h2>
+                <div id="voice-messages" class="chat-messages"></div>
+                <form id="voice-form">
+                    <div class="chat-input-group">
+                        <input type="text" id="voice-input" placeholder="请输入您的问题..." required>
+                        <button type="submit" class="btn btn-primary">发送并生成语音</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2024 心血管疾病预测系统 | Powered by XGBoost + DeepSeek + CosyVoice</p>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

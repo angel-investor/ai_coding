@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 语音问答系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 
+                         'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .input-section {
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+            min-width: 150px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-section {
+            margin-top: 30px;
+            display: none;
+            animation: slideIn 0.5s;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .result-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .answer-text {
+            line-height: 1.8;
+            font-size: 1.05em;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .audio-player {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .audio-player h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .audio-player audio {
+            width: 100%;
+            outline: none;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .examples {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 10px;
+        }
+        
+        .examples h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .examples ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .examples li {
+            padding: 8px 0;
+            cursor: pointer;
+            color: #555;
+            transition: color 0.3s;
+        }
+        
+        .examples li:hover {
+            color: #667eea;
+        }
+        
+        .examples li:before {
+            content: "💬 ";
+        }
+        
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ AI 语音问答系统</h1>
+            <p>基于 DeepSeek + CosyVoice 的智能语音助手</p>
+        </div>
+        
+        <div class="content">
+            <div class="input-section">
+                <h3 style="color: #667eea; margin-bottom: 15px;">请输入您的问题</h3>
+                
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="questionInput" 
+                        placeholder="例如：如何预防心血管疾病？"
+                        autocomplete="off"
+                    >
+                    <button class="btn" id="submitBtn" onclick="submitQuestion()">
+                        提交问题
+                    </button>
+                </div>
+                
+                <div class="examples">
+                    <h4>💡 示例问题（点击快速填入）</h4>
+                    <ul>
+                        <li onclick="fillQuestion('如何预防心血管疾病？')">如何预防心血管疾病？</li>
+                        <li onclick="fillQuestion('高血压患者应该注意什么？')">高血压患者应该注意什么？</li>
+                        <li onclick="fillQuestion('心血管疾病的早期症状有哪些？')">心血管疾病的早期症状有哪些？</li>
+                        <li onclick="fillQuestion('如何通过饮食改善心血管健康？')">如何通过饮食改善心血管健康？</li>
+                        <li onclick="fillQuestion('运动对心血管健康有什么好处？')">运动对心血管健康有什么好处？</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="result-section" id="resultSection">
+                <div class="result-card">
+                    <h3>📝 AI 回答</h3>
+                    <div class="answer-text" id="answerText"></div>
+                </div>
+                
+                <div class="audio-player" id="audioPlayer" style="display: none;">
+                    <h4>🔊 语音播放</h4>
+                    <audio id="audioElement" controls></audio>
+                </div>
+                
+                <div id="warningMessage"></div>
+                <div id="errorMessage"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // API 地址
+        const API_URL = 'http://localhost:5000/qa_audio';
+        
+        // 元素引用
+        const questionInput = document.getElementById('questionInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultSection = document.getElementById('resultSection');
+        const answerText = document.getElementById('answerText');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const audioElement = document.getElementById('audioElement');
+        const warningMessage = document.getElementById('warningMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        // 回车提交
+        questionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitQuestion();
+            }
+        });
+        
+        // 填充示例问题
+        function fillQuestion(question) {
+            questionInput.value = question;
+            questionInput.focus();
+        }
+        
+        // 提交问题
+        async function submitQuestion() {
+            const question = questionInput.value.trim();
+            
+            if (!question) {
+                alert('请输入问题');
+                return;
+            }
+            
+            // 禁用按钮
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading"></span> 处理中...';
+            
+            // 隐藏之前的结果
+            resultSection.style.display = 'none';
+            audioPlayer.style.display = 'none';
+            warningMessage.innerHTML = '';
+            errorMessage.innerHTML = '';
+            
+            try {
+                console.log('发送请求:', question);
+                
+                // 发送请求
+                const response = await axios.post(API_URL, {
+                    question: question
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('响应数据:', response.data);
+                
+                // 显示结果
+                displayResult(response.data);
+                
+            } catch (error) {
+                console.error('请求失败:', error);
+                
+                let errorMsg = '请求失败，请检查服务器连接';
+                
+                if (error.response) {
+                    errorMsg = error.response.data.error || errorMsg;
+                } else if (error.request) {
+                    errorMsg = '无法连接到服务器，请确保服务器已启动';
+                }
+                
+                displayError(errorMsg);
+            } finally {
+                // 恢复按钮
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '提交问题';
+            }
+        }
+        
+        // 显示结果
+        function displayResult(data) {
+            if (!data.success) {
+                displayError(data.error || '处理失败');
+                return;
+            }
+            
+            // 显示文本回答
+            answerText.textContent = data.text;
+            resultSection.style.display = 'block';
+            
+            // 显示音频
+            if (data.audio_url) {
+                audioElement.src = data.audio_url;
+                audioPlayer.style.display = 'block';
+                
+                // 自动播放（某些浏览器可能阻止）
+                audioElement.play().catch(e => {
+                    console.log('自动播放被阻止，请手动点击播放');
+                });
+            }
+            
+            // 显示警告（如果有）
+            if (data.warning) {
+                warningMessage.className = 'warning';
+                warningMessage.textContent = '⚠️ ' + data.warning;
+            }
+            
+            // 滚动到结果
+            resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // 显示错误
+        function displayError(message) {
+            errorMessage.className = 'error';
+            errorMessage.textContent = '❌ ' + message;
+            resultSection.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+

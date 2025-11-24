@@ -1,0 +1,36 @@
+# ============================================
+#   环境变量配置模板
+# ============================================
+#
+# 使用说明:
+# 1. 将此文件复制为 .env
+# 2. 填入你的 API Key
+# 3. 保存文件
+#
+# 注意: .env 文件不会被 git 追踪
+# ============================================
+
+# DeepSeek API 配置 (必需 - 语音问答功能)
+DEEPSEEK_API_KEY=sk-52e226ac3cac46838cb282b45b1a648e
+DEEPSEEK_API_URL=https://api.deepseek.com/v1
+MODEL=deepseek-chat
+
+# CosyVoice 配置 (可选 - 语音合成功能)
+COSYVOICE_APPKEY=your_cosyvoice_appkey_here
+COSYVOICE_TOKEN=your_cosyvoice_token_here
+COSYVOICE_API_URL=https://dashscope.aliyuncs.com/api/v1/services/tts
+COSYVOICE_TIMEOUT=30
+COSYVOICE_MAX_RETRIES=3
+
+# 模型配置
+MODEL_PATH=./model/xgb_model.pkl
+DATA_PATH=D:/project/workspace/ai_coding/data/心血管疾病.xlsx
+
+# Flask 配置
+FLASK_HOST=0.0.0.0
+FLASK_PORT=5000
+FLASK_DEBUG=False
+
+# 日志配置
+LOG_LEVEL=INFO
+LOG_DIR=./logs

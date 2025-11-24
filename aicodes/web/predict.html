@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心血管疾病预测系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 
+                         'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            animation: slideIn 0.5s;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.warning {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .result.danger {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .result h3 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .result-item {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .result-item .label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .result-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .help-text {
+            font-size: 0.85em;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🫀 心血管疾病预测系统</h1>
+            <p>基于 XGBoost 机器学习模型的智能健康评估</p>
+        </div>
+        
+        <div class="content">
+            <form id="predictForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="age">年龄 (岁) *</label>
+                        <input type="number" id="age" name="age" required min="1" max="120" value="50">
+                        <span class="help-text">请输入真实年龄</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="gender">性别 *</label>
+                        <select id="gender" name="gender" required>
+                            <option value="">请选择</option>
+                            <option value="1">女性</option>
+                            <option value="2" selected>男性</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="height">身高 (cm) *</label>
+                        <input type="number" id="height" name="height" required min="50" max="250" value="170">
+                        <span class="help-text">例如: 170</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="weight">体重 (kg) *</label>
+                        <input type="number" id="weight" name="weight" required min="20" max="300" step="0.1" value="70">
+                        <span class="help-text">例如: 70.5</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ap_hi">收缩压 (mmHg) *</label>
+                        <input type="number" id="ap_hi" name="ap_hi" required min="50" max="250" value="120">
+                        <span class="help-text">正常范围: 90-140</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ap_lo">舒张压 (mmHg) *</label>
+                        <input type="number" id="ap_lo" name="ap_lo" required min="30" max="200" value="80">
+                        <span class="help-text">正常范围: 60-90</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cholesterol">胆固醇 *</label>
+                        <select id="cholesterol" name="cholesterol" required>
+                            <option value="">请选择</option>
+                            <option value="1" selected>正常</option>
+                            <option value="2">高于正常</option>
+                            <option value="3">远高于正常</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="gluc">血糖 *</label>
+                        <select id="gluc" name="gluc" required>
+                            <option value="">请选择</option>
+                            <option value="1" selected>正常</option>
+                            <option value="2">高于正常</option>
+                            <option value="3">远高于正常</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="smoke">吸烟 *</label>
+                        <select id="smoke" name="smoke" required>
+                            <option value="">请选择</option>
+                            <option value="0" selected>否</option>
+                            <option value="1">是</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="alco">饮酒 *</label>
+                        <select id="alco" name="alco" required>
+                            <option value="">请选择</option>
+                            <option value="0" selected>否</option>
+                            <option value="1">是</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="active">运动 *</label>
+                        <select id="active" name="active" required>
+                            <option value="">请选择</option>
+                            <option value="0">不运动</option>
+                            <option value="1" selected>经常运动</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn" id="submitBtn">
+                    开始预测
+                </button>
+            </form>
+            
+            <div id="result" class="result"></div>
+        </div>
+    </div>
+    
+    <script>
+        // API 地址
+        const API_URL = 'http://localhost:5000/predict';
+        
+        // 表单元素
+        const form = document.getElementById('predictForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultDiv = document.getElementById('result');
+        
+        // 表单提交
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // 禁用按钮
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading"></span> 预测中...';
+            
+            // 隐藏之前的结果
+            resultDiv.style.display = 'none';
+            
+            try {
+                // 收集表单数据
+                const formData = new FormData(form);
+                const data = {};
+                
+                formData.forEach((value, key) => {
+                    data[key] = parseFloat(value);
+                });
+                
+                console.log('发送数据:', data);
+                
+                // 发送请求
+                const response = await axios.post(API_URL, data, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('响应数据:', response.data);
+                
+                // 显示结果
+                displayResult(response.data);
+                
+            } catch (error) {
+                console.error('预测失败:', error);
+                
+                let errorMessage = '预测失败，请检查服务器连接';
+                
+                if (error.response) {
+                    errorMessage = error.response.data.error || errorMessage;
+                } else if (error.request) {
+                    errorMessage = '无法连接到服务器，请确保服务器已启动';
+                }
+                
+                displayError(errorMessage);
+            } finally {
+                // 恢复按钮
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '开始预测';
+            }
+        });
+        
+        // 显示结果
+        function displayResult(data) {
+            if (!data.success) {
+                displayError(data.error || '预测失败');
+                return;
+            }
+            
+            const { prediction_label, probability, risk_level } = data;
+            
+            // 确定样式类
+            let resultClass = 'success';
+            if (risk_level === '中风险') {
+                resultClass = 'warning';
+            } else if (risk_level === '高风险' || prediction_label === '患病') {
+                resultClass = 'danger';
+            }
+            
+            // 构建 HTML
+            const html = `
+                <h3>预测结果</h3>
+                <div class="result-details">
+                    <div class="result-item">
+                        <div class="label">预测结果</div>
+                        <div class="value">${prediction_label}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="label">风险等级</div>
+                        <div class="value">${risk_level}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="label">健康概率</div>
+                        <div class="value">${(probability.healthy * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="label">患病概率</div>
+                        <div class="value">${(probability.disease * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+                <p style="margin-top: 15px; line-height: 1.6;">
+                    ${getAdviceText(prediction_label, risk_level)}
+                </p>
+            `;
+            
+            resultDiv.className = `result ${resultClass}`;
+            resultDiv.innerHTML = html;
+            resultDiv.style.display = 'block';
+            
+            // 滚动到结果
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // 显示错误
+        function displayError(message) {
+            const html = `
+                <h3>❌ 错误</h3>
+                <p>${message}</p>
+            `;
+            
+            resultDiv.className = 'result error';
+            resultDiv.innerHTML = html;
+            resultDiv.style.display = 'block';
+        }
+        
+        // 获取建议文本
+        function getAdviceText(prediction, riskLevel) {
+            if (prediction === '健康' && riskLevel === '低风险') {
+                return '✅ 您的心血管健康状况良好！请继续保持健康的生活方式，定期体检。';
+            } else if (riskLevel === '中风险') {
+                return '⚠️ 您存在一定的心血管疾病风险。建议改善生活习惯，控制血压、血脂，增加运动，并定期体检。';
+            } else {
+                return '⚠️ 您的心血管疾病风险较高！强烈建议尽快就医进行专业检查，并在医生指导下进行治疗和生活方式调整。';
+            }
+        }
+    </script>
+</body>
+</html>
+
